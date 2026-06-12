@@ -1,0 +1,63 @@
+# .gitignore
+
+# ── Secrets (NEVER commit) ────────────────────────────────────────────────────
+.env
+
+# ── Python bytecode & caches ─────────────────────────────────────────────────
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Build / packaging artifacts ───────────────────────────────────────────────
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+MANIFEST
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+.env/
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+
+# ── Type checkers ─────────────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ── OS generated files ────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ── Docker volumes / local data ───────────────────────────────────────────────
+data/
+
+# ── CLI generated output ──────────────────────────────────────────────────────
+out.json

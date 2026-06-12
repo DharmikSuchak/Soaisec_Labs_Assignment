@@ -1,0 +1,18 @@
+{
+  "prompt": "What is the latest research on transformer architectures?",
+  "context_docs": [
+    {
+      "id": "doc-1",
+      "text": "Transformers are a type of deep learning model introduced in 'Attention is All You Need' (2017). They use self-attention mechanisms to process sequences in parallel."
+    },
+    {
+      "id": "doc-2",
+      "text": "Recent advances include sparse attention, linear transformers, and mixture-of-experts architectures to reduce computational cost."
+    }
+  ],
+  "metadata": {
+    "app_id": "demo-app",
+    "user_id": "user-123",
+    "request_id": "req-abc-001"
+  }
+}

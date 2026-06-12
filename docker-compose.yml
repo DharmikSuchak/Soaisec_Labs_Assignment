@@ -1,0 +1,30 @@
+#one command to start everything: docker compose up --build
+#Prerequisites: Copy .env.example to .env and set API_KEY to a real secret before running.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "8501:8501"
+    environment:
+      # UI calls API using the Docker service name — not localhost
+      - API_BASE_URL=http://api:8000
+      # Key is injected from .env — UI uses it silently in request headers
+      - API_KEY=${API_KEY}
+    env_file:
+      - .env
+    depends_on:
+      - api
+    restart: unless-stopped
