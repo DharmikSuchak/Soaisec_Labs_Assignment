@@ -29,16 +29,25 @@ INJECTION_PHRASES: List[str] = [
     "pretend you are",
 ]
 
+# Subset of phrases that are high-confidence attacks — score=80 → single-shot block
+HIGH_CONFIDENCE_PI_PHRASES: List[str] = [
+    "ignore previous instructions",
+    "reveal system prompt",
+    "forget your instructions",
+]
+
 
 def detect_prompt_injection(prompt: str) -> DetectorResult:
     """
     Check for known prompt-injection phrases (case-insensitive).
 
-    Returns +50 risk score when any phrase is matched.
+    Returns +80 risk score for high-confidence phrases (single-shot block),
+    or +50 for other known injection phrases.
     The phrase itself is safe to surface in evidence — it is not PII.
     """
     prompt_lower = prompt.lower()
     reasons: List[dict] = []
+    is_high_confidence = False
 
     for phrase in INJECTION_PHRASES:
         if phrase in prompt_lower:
@@ -46,18 +55,26 @@ def detect_prompt_injection(prompt: str) -> DetectorResult:
                 "tag": "prompt_injection",
                 "evidence": f"matched phrase: {phrase}",
             })
+            if phrase in HIGH_CONFIDENCE_PI_PHRASES:
+                is_high_confidence = True
 
     if reasons:
-        return 50, "prompt_injection", reasons
+        # High-confidence phrases score 80 → forces block on a single hit
+        score = 80 if is_high_confidence else 50
+        return score, "prompt_injection", reasons
     return 0, "prompt_injection", []
 
 # 2. PII Detector + Redactor
 
-# Email pattern — covers the vast majority of real-world addresses
-_EMAIL_RE = re.compile(r"[\w.\-]+@[\w.\-]+\.\w+")
+# Email pattern — ReDoS-safe: bounded local-part {0,63}, \b anchors,
+# no unbounded repetition of overlapping character classes.
+_EMAIL_RE = re.compile(
+    r"\b[A-Za-z0-9][A-Za-z0-9._%+\-]{0,63}@[A-Za-z0-9\-]{1,63}"
+    r"(?:\.[A-Za-z0-9\-]{1,63})*\.[A-Za-z]{2,}\b"
+)
 
-# Phone patterns:
-#   • Indian mobile: 10 digits starting with 6-9
+# Phone patterns — ReDoS-safe: explicit bounded digit counts, \b anchors.
+#   • Indian mobile: exactly 10 digits starting with 6-9
 #   • Generic 10-digit run (no spaces/dashes — avoids false-positives)
 _PHONE_INDIAN_RE = re.compile(r"\b[6-9]\d{9}\b")
 _PHONE_GENERIC_RE = re.compile(r"\b\d{10}\b")

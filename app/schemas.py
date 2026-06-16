@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class ContextDoc(BaseModel):
     id: str = Field(..., description="Unique document identifier")
-    text: str = Field(..., description="Document content")
+    text: str = Field(..., max_length=20_000, description="Document content (max 20 000 chars)")
 
 
 class RequestMetadata(BaseModel):
@@ -16,10 +16,11 @@ class RequestMetadata(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
-    prompt: str = Field(..., description="The user prompt to be analyzed")
-    context_docs: List[ContextDoc] = Field( #list of documents
+    prompt: str = Field(..., min_length=1, max_length=10_000, description="The user prompt to be analyzed (max 10 000 chars)")
+    context_docs: List[ContextDoc] = Field( #list of documents — spec allows 0–3
         default_factory=list,
-        description="Retrieved context documents (RAG sources)"
+        max_length=3,
+        description="Retrieved context documents (RAG sources), max 3"
     )
     metadata: RequestMetadata = Field(..., description="Request metadata for logging")
 
@@ -39,7 +40,7 @@ class ReasonDetail(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
-    decision: str = Field(..., description="allow | block | transform")
+    decision: Literal["allow", "transform", "block"] = Field(..., description="allow | transform | block")
     risk_score: int = Field(..., ge=0, le=100, description="Aggregate risk score 0–100")
     risk_tags: List[str] = Field(default_factory=list, description="Tags of triggered detectors")
     sanitized_prompt: str = Field(..., description="Prompt after PII redaction")
@@ -56,4 +57,4 @@ class AnalyzeResponse(BaseModel):
 class PolicyResponse(BaseModel):
     version: str = Field(..., description="Policy version string")
     detectors: List[str] = Field(..., description="Active detector names")
-    thresholds: dict = Field(..., description="Decision thresholds")
+    thresholds: Dict[str, int] = Field(..., description="Decision thresholds")

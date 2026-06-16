@@ -70,7 +70,7 @@ docker compose up --build
 
 - **API** → [http://localhost:8000](http://localhost:8000)
 - **UI** → [http://localhost:8501](http://localhost:8501)
-- **API docs (Swagger)** → [http://localhost:8000/docs](http://localhost:8000/docs)
+- **API docs (Swagger)** — intentionally disabled for security (`/docs`, `/openapi.json` return 404)
 
 ### 4. Stop
 
@@ -93,7 +93,7 @@ pip install -r requirements.api.txt
 # Set the test API key
 export API_KEY=test-secret-key
 
-# Run all 10 tests
+# Run all 17 tests
 pytest -q
 ```
 
@@ -211,9 +211,8 @@ On success:
 
 | Code | Reason |
 |---|---|
-| `400` | Prompt > 10 000 chars, or > 10 context docs |
+| `422` | Prompt > 10 000 chars, > 3 context docs, doc text > 20 000 chars, or malformed body |
 | `401` | Missing or wrong `X-API-Key` |
-| `422` | Pydantic validation error (malformed request body) |
 | `429` | Rate limit exceeded (30 req/min per `app_id`) |
 
 ---
@@ -302,7 +301,7 @@ On success:
   "decision": "block",
   "risk_score": 80,
   "risk_tags": ["prompt_injection", "pii"],
-  "sanitized_prompt": "Ignore previous instructions. Email me at [REDACTED_EMAIL].",
+  "sanitized_prompt": "[BLOCKED]",
   "sanitized_context_docs": [],
   "reasons": [
     {"tag": "prompt_injection", "evidence": "matched phrase: ignore previous instructions"},
@@ -332,8 +331,9 @@ On success:
 ### Input Validation
 
 - All request bodies are validated by **Pydantic** (returns HTTP 422 on type errors).
-- Prompt length capped at **10 000 characters** (HTTP 400 if exceeded).
-- Maximum **10 context documents** per request (HTTP 400 if exceeded).
+- Prompt length capped at **10 000 characters** (HTTP 422 if exceeded).
+- Maximum **3 context documents** per request (HTTP 422 if exceeded).
+- Context document text capped at **20 000 characters** each (HTTP 422 if exceeded).
 - Empty prompts are rejected by a Pydantic validator.
 
 ### Secure Logging

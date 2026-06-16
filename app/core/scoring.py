@@ -77,6 +77,11 @@ def run_analysis(request: AnalyzeRequest) -> AnalyzeResponse:
     final_score: int = min(total_score, 100)
     decision: str = _decide(final_score)
 
+    # ── 6. On block, make output opaque — never round-trip raw attack content ─
+    if decision == "block":
+        sanitized_prompt = "[BLOCKED]"
+        sanitized_docs = []
+
     return AnalyzeResponse( #send back to streamlit ui
         decision=decision,
         risk_score=final_score,
