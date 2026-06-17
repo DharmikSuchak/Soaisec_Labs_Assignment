@@ -93,7 +93,7 @@ pip install -r requirements.api.txt
 # Set the test API key
 export API_KEY=test-secret-key
 
-# Run all 17 tests
+# Run all tests
 pytest -q
 ```
 
@@ -103,11 +103,10 @@ pytest -q
 docker compose run --rm api pytest -q
 ```
 
-Expected output — all 10 tests pass:
+Expected output — all tests pass:
 
 ```
-..........
-10 passed in X.XXs
+XX passed in X.XXs
 ```
 
 ---
@@ -354,7 +353,7 @@ On success:
 
 ### Assumptions & Architecture
 
-- **Stateless Gateway:** The service is a synchronous, stateless guardrail layer. It does not persist requests or responses (the `app/storage/` directory is scaffolded for future use).
+- **Stateless Gateway:** The service is a synchronous, stateless guardrail layer. It does not persist requests or responses.
 - **Server-to-Server Rate Limiting (`app_id` vs IP):** Rate limiting is keyed by `app_id` (extracted from the JSON payload) rather than the default IP address. Because SentraGuard Lite acts as an API gateway sitting *behind* a company's main application servers, relying on IP addresses would result in the gateway blocking the upstream servers' IP, effectively taking down all users. Furthermore, IP addresses are PII under GDPR, so avoiding IP-based tracking aligns with the core goal of PII protection.
 
 ### Tradeoff 1: Regex vs. ML NLP Models
@@ -397,6 +396,33 @@ We currently use the `slowapi` library backed by **In-Memory** storage to track 
 
 ---
 
+## Changelog
+
+### v1.1 — Post-Review Fixes (2026-06-16)
+
+| Fix | Description | Test |
+|---|---|---|
+| P0-1 | Disabled OpenAPI surface (`/docs`, `/openapi.json` → 404) | `test_11_openapi_surface_is_disabled` |
+| P0-2 | Enforced `context_docs` max 3 via Pydantic `max_length=3` | `test_12_analyze_rejects_more_than_three_context_docs` |
+| P0-3 | Block decision returns `[BLOCKED]` sentinel, not raw content | `test_13_block_decision_returns_sentinels_not_raw_content` |
+| P0-4 | Rate-limit keyed by `app_id` via `AppIdMiddleware` | `test_17_rate_limit_is_keyed_by_app_id_not_ip` |
+| P0-5 | ReDoS-resistant email/phone regexes (bounded, `\b`-anchored) | `test_14_email_regex_is_redos_resistant` |
+| P0-6 | High-confidence PI phrases → score 80 → single-shot block | `test_15_high_confidence_pi_blocks_single_shot` |
+| P0-7 | Tightened Pydantic types (`Literal`, `Dict[str,int]`), startup API_KEY validation | — |
+
+### v1.2 — Test Coverage Hardening (2026-06-17)
+
+| Test | What it covers |
+|---|---|
+| `test_18`, `test_19` | Auth 401 — missing and wrong API key |
+| `test_20`, `test_21` | Input validation — whitespace-only and empty prompt → 422 |
+| `test_22`–`test_25` | Boundary-score decisions (39→allow, 40→transform, 79→transform, 80→block) |
+| `test_26`, `test_27` | API-level boundary — PII-only=30→allow, RAG-only=40→transform |
+
+Also in v1.2: CLI exit codes differentiated (1=input, 2=network, 3=API error).
+
+---
+
 ## AI Usage
 
 ### What AI tools were used for
@@ -410,5 +436,5 @@ We currently use the `slowapi` library backed by **In-Memory** storage to track 
 - **All detector logic** (`app/core/detectors.py`) — each function was read line-by-line, the regex patterns were tested manually, and the scoring constants were chosen deliberately.
 - **Scoring engine** (`app/core/scoring.py`) — the decision mapping (allow/transform/block thresholds) and score capping logic were written and reasoned through independently.
 - **Security controls** — API key validation, rate limiting integration, input size guards, and the no-PII-in-logs rule were all consciously designed and can be fully explained.
-- **All 10 tests** — each test case was written to cover a specific requirement from the spec, not generated wholesale.
+- **All tests** — each test case was written to cover a specific requirement from the spec, not generated wholesale.
 - **Pydantic schemas** — field validators and model structure were designed to match the spec's request/response contract exactly.

@@ -64,10 +64,10 @@ def cmd_analyze(args: argparse.Namespace) -> None:
             f"[ERROR] Could not connect to API at {endpoint}. Is it running?",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(2)  # network error
     except requests.Timeout:
         print("[ERROR] Request timed out after 30 seconds.", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(2)  # network error
 
     # ── Handle non-2xx ───────────────────────────────────────────────────────
     if not response.ok:
@@ -75,7 +75,7 @@ def cmd_analyze(args: argparse.Namespace) -> None:
             f"[ERROR] API returned HTTP {response.status_code}: {response.text}",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(3)  # API error
 
     # ── Write output ──────────────────────────────────────────────────────────
     result = response.json()
